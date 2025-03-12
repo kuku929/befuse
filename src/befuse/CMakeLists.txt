@@ -1,13 +1,13 @@
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FUSE IMPORTED_TARGET fuse)
 
-add_executable(fuse fuse.cpp)
-target_link_libraries(fuse befs fs_shell root ${FUSE_LINK_LIBRARIES})
+add_executable(befuse fuse.cpp)
+target_link_libraries(befuse befs fs_shell root ${FUSE_LINK_LIBRARIES})
 
 message(${FUSE_LINK_LIBRARIES})
 message(${FUSE_INCLUDE_DIRS})
 
-target_include_directories(fuse
+target_include_directories(befuse
 	PRIVATE	
 	${CMAKE_SOURCE_DIR}/src/fs_shell
 	${FUSE_INCLUDE_DIRS}
@@ -17,7 +17,7 @@ target_include_directories(fuse
 )
 
 
-target_compile_definitions(fuse PRIVATE
+target_compile_definitions(befuse PRIVATE
 	FS_SHELL=1 
 	HAIKU_BUILD_COMPATIBILITY_H __STRICT_ANSI__
 	-DHAIKU_HOST_PLATFORM_64_BIT 
@@ -25,4 +25,8 @@ target_compile_definitions(fuse PRIVATE
 	HAIKU_HOST_PLATFORM_FREEBSD
 	HAIKU_HOST_USE_XATTR_REF
 	-D_FILE_OFFSET_BITS=64 
+)
+install(TARGETS befuse
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )
