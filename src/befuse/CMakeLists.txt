@@ -1,5 +1,5 @@
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(FUSE IMPORTED_TARGET fuse)
+pkg_check_modules(FUSE IMPORTED_TARGET fuse3)
 
 add_executable(befuse fuse.cpp)
 target_link_libraries(befuse befs fs_shell root ${FUSE_LINK_LIBRARIES})

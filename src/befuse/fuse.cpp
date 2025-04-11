@@ -3,7 +3,7 @@
  * Distributed under the terms of the MIT License.
  */
 
-#define FUSE_USE_VERSION 27
+#define FUSE_USE_VERSION 31
 
 #include <fuse.h>
 #include <stdio.h>
@@ -135,7 +135,7 @@ fromFsshStatToStat(struct fssh_stat* f_stbuf, struct stat* stbuf)
 
 
 int
-fuse_getattr(const char* path, struct stat* stbuf)
+fuse_getattr(const char* path, struct stat* stbuf, struct fuse_file_info *fi)
 {
 	PRINTD("##getattr\n");
 	struct fssh_stat f_stbuf;
@@ -170,7 +170,7 @@ fuse_readlink(const char* path, char* buffer, size_t size)
 
 static int
 fuse_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
-	off_t offset, struct fuse_file_info* fi)
+	off_t offset, struct fuse_file_info* fi, enum fuse_readdir_flags)
 {
 	PRINTD("##readdir\n");
 	int dfp = _kern_open_dir(-1, path);
@@ -190,7 +190,7 @@ fuse_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
 			false, &f_st, sizeof(f_st));
 		if (status >= FSSH_B_OK) {
 			fromFsshStatToStat(&f_st, &st);
-			if (filler(buf, dirEntry->d_name, &st, 0))
+			if (filler(buf, dirEntry->d_name, &st, 0, FUSE_FILL_DIR_DEFAULTS))
 				break;
 		}
 	}
@@ -251,7 +251,7 @@ fuse_rmdir(const char* path)
 
 
 static int
-fuse_rename(const char* from, const char* to)
+fuse_rename(const char* from, const char* to, unsigned int flags)
 {
 	PRINTD("##rename\n");
 	return _ERR(_kern_rename(-1, from, -1, to));
@@ -267,7 +267,7 @@ fuse_link(const char* from, const char* to)
 
 
 static int
-fuse_chmod(const char* path, mode_t mode)
+fuse_chmod(const char* path, mode_t mode, struct fuse_file_info *fi)
 {
 	PRINTD("##chmod\n");
 	fssh_struct_stat st;
@@ -278,7 +278,7 @@ fuse_chmod(const char* path, mode_t mode)
 
 
 static int
-fuse_chown(const char* path, uid_t uid, gid_t gid)
+fuse_chown(const char* path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
 {
 	PRINTD("##chown\n");
 	fssh_struct_stat st;
@@ -342,7 +342,7 @@ fuse_write(const char* path, const char* buf, size_t size, off_t offset,
 
 
 static int
-fuse_truncate(const char *path, off_t off)
+fuse_truncate(const char *path, off_t off, struct fuse_file_info *fi)
 {
 	PRINTD("##truncate\n");
 

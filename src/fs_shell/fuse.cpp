@@ -3,7 +3,7 @@
  * Distributed under the terms of the MIT License.
  */
 
-#define FUSE_USE_VERSION 27
+#define FUSE_USE_VERSION 31
 
 #include <fuse/fuse.h>
 #include <stdio.h>
