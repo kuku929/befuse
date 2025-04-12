@@ -2,8 +2,6 @@
  * Copyright 2001-2019, Axel Dörfler, axeld@pinc-software.de.
  * This file may be used under the terms of the MIT License.
  */
-
-
 //! superblock, mounting, etc.
 
 
@@ -20,6 +18,8 @@
 static const int32 kDesiredAllocationGroups = 56;
 	// This is the number of allocation groups that will be tried
 	// to be given for newly initialized disks.
+	// assuming an average partition size of 120GB, 469 allocation
+	// groups are allocated.
 	// That's only relevant for smaller disks, though, since any
 	// of today's disk sizes already reach the maximum length
 	// of an allocation group (65536 blocks).
@@ -60,6 +60,10 @@ disk_super_block::IsValid() const
 }
 
 
+/**@brief 
+ * prepare the superblock in memory. The write happens
+ * in Volume::Mount()
+ */
 void
 disk_super_block::Initialize(const char* diskName, off_t numBlocks,
 	uint32 blockSize)
@@ -175,6 +179,13 @@ Volume::Panic()
 }
 
 
+/**
+ * check the validity of device and setup 
+ * the allocator in memory. an Inode to the
+ * root dir and index dir is also created( makes 
+ * sense since the superblock directly stores 
+ * the block_run of the root dir ).
+ */
 status_t
 Volume::Mount(const char* deviceName, uint32 flags)
 {
@@ -506,6 +517,7 @@ Volume::DeleteCheckVisitor()
 Volume::CheckSuperBlock(const uint8* data, uint32* _offset)
 {
 	disk_super_block* superBlock = (disk_super_block*)(data + 512);
+	INFORM(("SIZE: %l\n", sizeof(disk_super_block)));
 	if (superBlock->IsMagicValid()) {
 		if (superBlock->IsValid()) {
 			if (_offset != NULL)
@@ -546,6 +558,13 @@ Volume::Identify(int fd, disk_super_block* superBlock)
 }
 
 
+/**
+ * prepare the volume with all necessary data structures.
+ * which is the first few blocks of the disk. We 
+ * - write superblock
+ * - set aside some memory for the journal
+ * - create an empty bitmap
+ */
 status_t
 Volume::Initialize(int fd, const char* name, uint32 blockSize,
 	uint32 flags)

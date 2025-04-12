@@ -2,6 +2,9 @@
  * Copyright 2001-2012, Axel Dörfler, axeld@pinc-software.de.
  * This file may be used under the terms of the MIT License.
  */
+/** @file Volume.h
+ * @brief Volume class for mounting/formatting
+ */
 #ifndef VOLUME_H
 #define VOLUME_H
 
@@ -29,14 +32,23 @@ enum volume_initialize_flags {
 typedef DoublyLinkedList<Inode> InodeList;
 
 
+/**
+ * @brief
+ * The memory region given to the filesystem. 
+ *
+ * One of first classes that are instantiated in memory
+ * usually triggered by a mount operation
+ *
+ * Except for the Mount/Initialize functions, there is not much going on here
+ */
 class Volume {
 public:
-							Volume(fs_volume* volume);
+							Volume(fs_volume* volume); /**<fs_volume is a Haiku data type, No need for this in FreeBSD*/
 							~Volume();
 
-			status_t		Mount(const char* device, uint32 flags);
+			status_t		Mount(const char* device, uint32 flags); /**<This will be called by the vnode layer, the argument will be of mount type. */
 			status_t		Unmount();
-			status_t		Initialize(int fd, const char* name,
+			status_t		Initialize(int fd, const char* name, 
 								uint32 blockSize, uint32 flags);
 
 			bool			IsInitializing() const { return fVolume == NULL; }
@@ -146,7 +158,7 @@ public:
 
 	static	status_t		CheckSuperBlock(const uint8* data,
 								uint32* _offset = NULL);
-	static	status_t		Identify(int fd, disk_super_block* superBlock);
+	static	status_t		Identify(int fd, disk_super_block* superBlock); /**<Checks whether the device is valid BFS partition. */
 
 private:
 			status_t		_EraseUnusedBootBlock();

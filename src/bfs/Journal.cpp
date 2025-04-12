@@ -568,6 +568,7 @@ Journal::ReplayLog()
 {
 	// TODO: this logic won't work whenever the size of the pending transaction
 	//	equals the size of the log (happens with the original BFS only)
+	//	Makes sense since the buffer is cyclic and an instruction that is the size of the buffer will seem like the buffer is empty
 	if (fVolume->LogStart() == fVolume->LogEnd())
 		return B_OK;
 

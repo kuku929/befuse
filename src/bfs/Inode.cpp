@@ -6,7 +6,6 @@
 
 //! Inode access functions
 
-
 #include "Debug.h"
 #include "Inode.h"
 #include "BPlusTree.h"

@@ -9,7 +9,7 @@
 
 #if FS_SHELL
 #	include "fssh_api_wrapper.h"
-
+#	include <errno.h>
 #	include "OpenHashTable.h"
 #	include "list.h"
 #else

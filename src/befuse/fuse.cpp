@@ -190,7 +190,7 @@ fuse_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
 			false, &f_st, sizeof(f_st));
 		if (status >= FSSH_B_OK) {
 			fromFsshStatToStat(&f_st, &st);
-			if (filler(buf, dirEntry->d_name, &st, 0, FUSE_FILL_DIR_DEFAULTS))
+			if (filler(buf, dirEntry->d_name, &st, 0, fuse_fill_dir_flags::FUSE_FILL_DIR_DEFAULTS))
 				break;
 		}
 	}

@@ -4,6 +4,9 @@
  *
  * This file may be used under the terms of the MIT License.
  */
+/**@file bfs.h 
+ * @brief some important structs and constants defined
+ */
 #ifndef BFS_H
 #define BFS_H
 
@@ -24,10 +27,23 @@ extern fs_volume_ops gBFSVolumeOps;
 extern fs_vnode_ops gBFSVnodeOps;
 #endif
 
+/**
+ * @brief Extent of blocks
+ *
+ * Since the block_run::length field spans 16 bits, the largest number of
+ * blocks covered by a block_run is 65535 (as long as we don't want to
+ * break compatibility and take a zero length for 65536).
+ *
+ * A single allocation group can have multiple block runs
+ * the maximum number of blocks in an allocation group is 65536
+ * Each allocation group should be atleast one block of bitmap
+ * an 8192K block bitmap maps 65536 blocks. Any more and we do
+ * not have enough blocks in an allocation group to map enough blocks
+ */
 struct block_run {
-	int32		allocation_group;
-	uint16		start;
-	uint16		length;
+	int32		allocation_group; /**< Allocation group these blocks belong to*/
+	uint16		start; /**< Starting block number */
+	uint16		length; /**<Length of extent */
 
 	int32 AllocationGroup() const
 		{ return BFS_ENDIAN_TO_HOST_INT32(allocation_group); }
@@ -40,15 +56,12 @@ struct block_run {
 	inline bool MergeableWith(block_run run) const;
 	inline void SetTo(int32 group, uint16 start, uint16 length = 1);
 
-	inline static block_run Run(int32 group, uint16 start, uint16 length = 1);
-		// can't have a constructor because it's used in a union
-} _PACKED;
+	inline static block_run Run(int32 group, uint16 start, uint16 length = 1); /**< The constructor. 
+	can't have a constructor because it's used in a union */
+} _PACKED; 
 
 typedef block_run inode_addr;
 
-// Since the block_run::length field spans 16 bits, the largest number of
-// blocks covered by a block_run is 65535 (as long as we don't want to
-// break compatibility and take a zero length for 65536).
 #define MAX_BLOCK_RUN_LENGTH	65535
 
 //**************************************
@@ -56,29 +69,34 @@ typedef block_run inode_addr;
 
 #define BFS_DISK_NAME_LENGTH	32
 
+/**
+ * @brief Super block struct
+ *
+ * magic1,magic2,magic3 are used for consistency check and 
+ * need to be placed at regular intervals
+ */
 struct disk_super_block {
 	char		name[BFS_DISK_NAME_LENGTH];
-	int32		magic1;
+	int32		magic1; /**!value "BFS1"*/
 	int32		fs_byte_order;
 	uint32		block_size;
-	uint32		block_shift;
-	int64		num_blocks;
+	uint32		block_shift;	/**<Exponent of block_size. used for additional checking*/
+	int64		num_blocks; 	/**<Total usable blocks*/
 	int64		used_blocks;
-	int32		inode_size;
+	int32		inode_size; 	/**<Multiple of block_size. used for checking as well*/
 	int32		magic2;
-	int32		blocks_per_ag;
-	int32		ag_shift;
-	int32		num_ags;
-	int32		flags;
-	block_run	log_blocks;
+	int32		blocks_per_ag;	/**<Number of bitmap blocks. total should not exceed 65536*/
+	int32		ag_shift;		/**<Bits to shift allocation number to get byte offset*/
+	int32		num_ags; 		/**<Total allocation groups. used as a check for block_run::allocation_group*/
+	int32		flags;			/**<BFS_CLEAN or BFS_DIRTY. used to check for consistency*/
+	block_run	log_blocks;		/**<Location of journal. circular buffer of fixed size*/
 	int64		log_start;
 	int64		log_end;
 	int32		magic3;
-	inode_addr	root_dir;
-	inode_addr	indices;
+	inode_addr	root_dir;		/**<Location of root directory*/
+	inode_addr	indices;		/**<Location of index directory*/
 	int32		_reserved[8];
-	int32		pad_to_block[87];
-		// this also contains parts of the boot block
+	int32		pad_to_block[87]; /**<This also contains parts of the boot block*/
 
 	int32 Magic1() const { return BFS_ENDIAN_TO_HOST_INT32(magic1); }
 	int32 Magic2() const { return BFS_ENDIAN_TO_HOST_INT32(magic2); }
@@ -118,11 +136,11 @@ struct disk_super_block {
 #define NUM_DIRECT_BLOCKS			12
 
 struct data_stream {
-	block_run	direct[NUM_DIRECT_BLOCKS];
-	int64		max_direct_range;
-	block_run	indirect;
-	int64		max_indirect_range;
-	block_run	double_indirect;
+	block_run	direct[NUM_DIRECT_BLOCKS]; 	/**<Number of bytes accessible = NUM_DIRECT_BLOCKS * MAX_BLOCKS_PER_AG * BLOCK_SIZE. */
+	int64		max_direct_range;			/**<Stores the maximum possible blocks addressable by direct range. */
+	block_run	indirect;					/**<Block_run is atleast 4K in size. A single block run is 8 bytes. */
+	int64		max_indirect_range;			/**<Stores the maximum possible blocks addressable by indirect range. */
+	block_run	double_indirect;			/**<Block runs mapped by double indirect addressing are always 4K in size. */
 	int64		max_double_indirect_range;
 	int64		size;
 
@@ -192,21 +210,24 @@ class Volume;
 
 inline uint32 unique_from_nsec(uint32 time);
 
+/**@brief inode struct
+ *
+ */
 struct bfs_inode {
-	int32		magic1;
-	inode_addr	inode_num;
-	int32		uid;
+	int32		magic1;				/**<Consistency checking. can be used for versioning inodes.*/
+	inode_addr	inode_num; 			/**<Address of this inode. where to find it in our idea of disk.*/
+	int32		uid;				/**<POSIX compliant permissions.*/
 	int32		gid;
-	int32		mode;				// see sys/stat.h
-	int32		flags;
+	int32		mode;				// See sys/stat.h
+	int32		flags;				/**<Stores important stuff about this node. active,deleted,journaled etc. */
 	int64		create_time;
-	int64		last_modified_time;
-	inode_addr	parent;
-	inode_addr	attributes;
-	uint32		type;				// attribute type
+	int64		last_modified_time;	/**<Updated only when file is closed to save disk operations. */
+	inode_addr	parent;				/**<Address to parent directory. used for reconstructing path for queries. */
+	inode_addr	attributes;			/**<Hidden attribute directory. */
+	uint32		type;				/**<Attribute type. not to be confused with type of file. */
 
-	int32		inode_size;
-	uint32		etc;
+	int32		inode_size;			/**<Used for sanity check. */
+	uint32		etc;				/**<Pointer to in memory stuff about this inode. here for convenience. */
 
 	union {
 		data_stream		data;

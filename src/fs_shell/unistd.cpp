@@ -254,7 +254,7 @@ fssh_ioctl(int fd, unsigned long op, ...)
 					// FreeBSD supports device_type flag as disklabel.d_type,
 					// for now we harcod it to B_DISK.
 					geometry->device_type = FSSH_B_DISK;
-					geometry->removable = disklabel.d_flags & D_REMOVABLE > 0;
+					geometry->removable = disklabel.d_flags & (D_REMOVABLE > 0);
 					// read_only?
 					geometry->read_only = false;
 					// FreeBSD does not support write_once flag.

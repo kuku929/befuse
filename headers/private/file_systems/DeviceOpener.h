@@ -8,6 +8,7 @@
 
 #ifdef FS_SHELL
 #	include "fssh_api_wrapper.h"
+# 	include <errno.h>
 #else
 #	include <fcntl.h>
 #	include <sys/types.h>

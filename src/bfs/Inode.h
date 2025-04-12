@@ -6,6 +6,7 @@
 #define INODE_H
 
 
+#include <errno.h>
 #include "system_dependencies.h"
 
 #include "CachedBlock.h"

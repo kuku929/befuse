@@ -6,6 +6,7 @@
 #define BLOCK_ALLOCATOR_H
 
 
+#include <errno.h>
 #include "system_dependencies.h"
 
 
